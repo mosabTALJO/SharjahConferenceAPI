@@ -1,0 +1,6 @@
+@SharjahConferenceAPI_HostAddress = http://localhost:5041
+
+GET {{SharjahConferenceAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
