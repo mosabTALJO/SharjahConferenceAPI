@@ -16,6 +16,7 @@ public interface IUnitOfWork : IDisposable
     IRepository<Meeting> Meetings { get; }
     IRepository<Facility> Facilities { get; }
     IRepository<Announcement> Announcements { get; }
+    IRepository<User> Users { get; }
 
     Task<int> CompleteAsync(CancellationToken cancellationToken = default);
 }

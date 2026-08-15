@@ -3,44 +3,38 @@ namespace SharjahConferenceAPI.Services.Implementations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Data.UnitOfWork;
 using SharjahConferenceAPI.DTOs;
 using SharjahConferenceAPI.Mappers;
 using SharjahConferenceAPI.Services.Interfaces;
 
-public class ParticipantService : IParticipantService
+public class ParticipantService(IUnitOfWork unitOfWork) : IParticipantService
 {
-    private readonly IUnitOfWork _unitOfWork;
-
-    public ParticipantService(IUnitOfWork unitOfWork)
+    public async Task<IEnumerable<ParticipantDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        _unitOfWork = unitOfWork;
-    }
-
-    public async Task<IEnumerable<ParticipantDto>> GetAllAsync()
-    {
-        var entities = await _unitOfWork.Participants.GetAllAsync();
+        var entities = await unitOfWork.Participants.GetAllAsync(cancellationToken);
         return entities.Select(e => e.ToDto());
     }
 
-    public async Task<ParticipantDto?> GetByIdAsync(Guid id)
+    public async Task<ParticipantDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var entity = await _unitOfWork.Participants.GetByIdAsync(id);
+        var entity = await unitOfWork.Participants.GetByIdAsync(id, cancellationToken);
         return entity?.ToDto();
     }
 
-    public async Task<ParticipantDto> CreateAsync(CreateParticipantDto createDto)
+    public async Task<ParticipantDto> CreateAsync(CreateParticipantDto createDto, CancellationToken cancellationToken = default)
     {
         var entity = createDto.ToEntityFromCreate();
-        await _unitOfWork.Participants.AddAsync(entity);
-        await _unitOfWork.CompleteAsync();
+        await unitOfWork.Participants.AddAsync(entity, cancellationToken);
+        await unitOfWork.CompleteAsync(cancellationToken);
         return entity.ToDto();
     }
 
-    public async Task<ParticipantDto?> UpdateAsync(Guid id, UpdateParticipantDto updateDto)
+    public async Task<ParticipantDto?> UpdateAsync(Guid id, UpdateParticipantDto updateDto, CancellationToken cancellationToken = default)
     {
-        var entity = await _unitOfWork.Participants.GetByIdAsync(id);
+        var entity = await unitOfWork.Participants.GetByIdAsync(id, cancellationToken);
         if (entity == null) return null;
 
         entity.FirstName = updateDto.FirstName;
@@ -49,19 +43,19 @@ public class ParticipantService : IParticipantService
         entity.Phone = updateDto.Phone;
         entity.Title = updateDto.Title;
 
-        _unitOfWork.Participants.Update(entity);
-        await _unitOfWork.CompleteAsync();
+        unitOfWork.Participants.Update(entity);
+        await unitOfWork.CompleteAsync(cancellationToken);
 
         return entity.ToDto();
     }
 
-    public async Task<bool> DeleteAsync(Guid id)
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var entity = await _unitOfWork.Participants.GetByIdAsync(id);
+        var entity = await unitOfWork.Participants.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
 
-        _unitOfWork.Participants.Remove(entity);
-        await _unitOfWork.CompleteAsync();
+        unitOfWork.Participants.Remove(entity);
+        await unitOfWork.CompleteAsync(cancellationToken);
         return true;
     }
 }

@@ -23,6 +23,7 @@ public class EventDbContext : DbContext
     public DbSet<Meeting> Meetings => Set<Meeting>();
     public DbSet<Facility> Facilities => Set<Facility>();
     public DbSet<Announcement> Announcements => Set<Announcement>();
+    public DbSet<User> Users => Set<User>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -32,6 +33,7 @@ public class EventDbContext : DbContext
         dataSourceBuilder.MapEnum<TableStatus>();
         dataSourceBuilder.MapEnum<MeetingStatus>();
         dataSourceBuilder.MapEnum<AnnouncementPriority>();
+        dataSourceBuilder.MapEnum<UserRole>();
         
         optionsBuilder.UseNpgsql(dataSourceBuilder.Build());
     }
@@ -43,6 +45,7 @@ public class EventDbContext : DbContext
         modelBuilder.HasPostgresEnum<TableStatus>();
         modelBuilder.HasPostgresEnum<MeetingStatus>();
         modelBuilder.HasPostgresEnum<AnnouncementPriority>();
+        modelBuilder.HasPostgresEnum<UserRole>();
 
         // Venue Configuration
         modelBuilder.Entity<Venue>(entity =>
@@ -90,6 +93,11 @@ public class EventDbContext : DbContext
                   .WithOne(e => e.MeetingTable)
                   .HasForeignKey(e => e.MeetingTableId)
                   .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ReservedByPublisher)
+                  .WithMany(p => p.ReservedTables)
+                  .HasForeignKey(e => e.ReservedByPublisherId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
 
         // Publisher Configuration
@@ -123,6 +131,25 @@ public class EventDbContext : DbContext
                   .WithOne(e => e.Participant)
                   .HasForeignKey(e => e.ParticipantId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // User Configuration
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Email).HasMaxLength(255).IsRequired();
+            entity.HasIndex(e => e.Email).IsUnique();
+            entity.Property(e => e.PasswordHash).HasMaxLength(500).IsRequired();
+
+            entity.HasOne(e => e.Publisher)
+                  .WithOne(p => p.User)
+                  .HasForeignKey<User>(e => e.PublisherId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Participant)
+                  .WithOne(p => p.User)
+                  .HasForeignKey<User>(e => e.ParticipantId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
 
         // Meeting Configuration

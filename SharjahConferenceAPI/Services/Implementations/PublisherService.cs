@@ -3,63 +3,57 @@ namespace SharjahConferenceAPI.Services.Implementations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Data.UnitOfWork;
 using SharjahConferenceAPI.DTOs;
 using SharjahConferenceAPI.Mappers;
 using SharjahConferenceAPI.Services.Interfaces;
 
-public class PublisherService : IPublisherService
+public class PublisherService(IUnitOfWork unitOfWork) : IPublisherService
 {
-    private readonly IUnitOfWork _unitOfWork;
-
-    public PublisherService(IUnitOfWork unitOfWork)
+    public async Task<IEnumerable<PublisherDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        _unitOfWork = unitOfWork;
-    }
-
-    public async Task<IEnumerable<PublisherDto>> GetAllAsync()
-    {
-        var entities = await _unitOfWork.Publishers.GetAllAsync();
+        var entities = await unitOfWork.Publishers.GetAllAsync(cancellationToken);
         return entities.Select(e => e.ToDto());
     }
 
-    public async Task<PublisherDto?> GetByIdAsync(Guid id)
+    public async Task<PublisherDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var entity = await _unitOfWork.Publishers.GetByIdAsync(id);
+        var entity = await unitOfWork.Publishers.GetByIdAsync(id, cancellationToken);
         return entity?.ToDto();
     }
 
-    public async Task<PublisherDto> CreateAsync(CreatePublisherDto createDto)
+    public async Task<PublisherDto> CreateAsync(CreatePublisherDto createDto, CancellationToken cancellationToken = default)
     {
         var entity = createDto.ToEntityFromCreate();
-        await _unitOfWork.Publishers.AddAsync(entity);
-        await _unitOfWork.CompleteAsync();
+        await unitOfWork.Publishers.AddAsync(entity, cancellationToken);
+        await unitOfWork.CompleteAsync(cancellationToken);
         return entity.ToDto();
     }
 
-    public async Task<PublisherDto?> UpdateAsync(Guid id, UpdatePublisherDto updateDto)
+    public async Task<PublisherDto?> UpdateAsync(Guid id, UpdatePublisherDto updateDto, CancellationToken cancellationToken = default)
     {
-        var entity = await _unitOfWork.Publishers.GetByIdAsync(id);
+        var entity = await unitOfWork.Publishers.GetByIdAsync(id, cancellationToken);
         if (entity == null) return null;
 
         entity.NameEn = updateDto.NameEn;
         entity.NameAr = updateDto.NameAr;
         entity.CountryCode = updateDto.CountryCode;
 
-        _unitOfWork.Publishers.Update(entity);
-        await _unitOfWork.CompleteAsync();
+        unitOfWork.Publishers.Update(entity);
+        await unitOfWork.CompleteAsync(cancellationToken);
 
         return entity.ToDto();
     }
 
-    public async Task<bool> DeleteAsync(Guid id)
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var entity = await _unitOfWork.Publishers.GetByIdAsync(id);
+        var entity = await unitOfWork.Publishers.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
 
-        _unitOfWork.Publishers.Remove(entity);
-        await _unitOfWork.CompleteAsync();
+        unitOfWork.Publishers.Remove(entity);
+        await unitOfWork.CompleteAsync(cancellationToken);
         return true;
     }
 }

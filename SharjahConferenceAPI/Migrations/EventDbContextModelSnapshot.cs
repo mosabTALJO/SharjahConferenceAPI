@@ -23,6 +23,7 @@ namespace SharjahConferenceAPI.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "announcement_priority", new[] { "low", "normal", "high", "urgent" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "meeting_status", new[] { "scheduled", "in_progress", "completed", "cancelled", "no_show" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "table_status", new[] { "available", "reserved", "occupied" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "user_role", new[] { "admin", "publisher", "participant" });
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Data.Entities.Announcement", b =>
@@ -138,6 +139,9 @@ namespace SharjahConferenceAPI.Migrations
                     b.Property<int>("OperationalStatus")
                         .HasColumnType("integer");
 
+                    b.Property<Guid?>("ReservedByPublisherId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("TableNumber")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -147,6 +151,8 @@ namespace SharjahConferenceAPI.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ReservedByPublisherId");
 
                     b.HasIndex("ZoneId", "TableNumber")
                         .IsUnique();
@@ -217,6 +223,48 @@ namespace SharjahConferenceAPI.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Publishers");
+                });
+
+            modelBuilder.Entity("Data.Entities.User", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<Guid?>("ParticipantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid?>("PublisherId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("ParticipantId")
+                        .IsUnique();
+
+                    b.HasIndex("PublisherId")
+                        .IsUnique();
+
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("Data.Entities.Venue", b =>
@@ -307,13 +355,37 @@ namespace SharjahConferenceAPI.Migrations
 
             modelBuilder.Entity("Data.Entities.MeetingTable", b =>
                 {
+                    b.HasOne("Data.Entities.Publisher", "ReservedByPublisher")
+                        .WithMany("ReservedTables")
+                        .HasForeignKey("ReservedByPublisherId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Data.Entities.Zone", "Zone")
                         .WithMany("Tables")
                         .HasForeignKey("ZoneId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("ReservedByPublisher");
+
                     b.Navigation("Zone");
+                });
+
+            modelBuilder.Entity("Data.Entities.User", b =>
+                {
+                    b.HasOne("Data.Entities.Participant", "Participant")
+                        .WithOne("User")
+                        .HasForeignKey("Data.Entities.User", "ParticipantId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Data.Entities.Publisher", "Publisher")
+                        .WithOne("User")
+                        .HasForeignKey("Data.Entities.User", "PublisherId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Participant");
+
+                    b.Navigation("Publisher");
                 });
 
             modelBuilder.Entity("Data.Entities.Zone", b =>
@@ -335,11 +407,17 @@ namespace SharjahConferenceAPI.Migrations
             modelBuilder.Entity("Data.Entities.Participant", b =>
                 {
                     b.Navigation("Meetings");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Data.Entities.Publisher", b =>
                 {
                     b.Navigation("Meetings");
+
+                    b.Navigation("ReservedTables");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Data.Entities.Venue", b =>

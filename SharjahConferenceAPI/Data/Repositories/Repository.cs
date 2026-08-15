@@ -19,19 +19,53 @@ public class Repository<TEntity> : IRepository<TEntity> where TEntity : class
         _dbSet = context.Set<TEntity>();
     }
 
-    public async Task<TEntity?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<TEntity?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default, params Expression<Func<TEntity, object>>[] includes)
     {
-        return await _dbSet.FindAsync(new object[] { id }, cancellationToken);
+        if (includes.Length == 0)
+        {
+            return await _dbSet.FindAsync([id], cancellationToken);
+        }
+
+        IQueryable<TEntity> query = _dbSet;
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+
+        return await query.FirstOrDefaultAsync(e => EF.Property<Guid>(e, "Id") == id, cancellationToken);
     }
 
-    public async Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<TEntity?> SingleOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default, params Expression<Func<TEntity, object>>[] includes)
     {
-        return await _dbSet.ToListAsync(cancellationToken);
+        IQueryable<TEntity> query = _dbSet;
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+
+        return await query.SingleOrDefaultAsync(predicate, cancellationToken);
     }
 
-    public async Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default, params Expression<Func<TEntity, object>>[] includes)
     {
-        return await _dbSet.Where(predicate).ToListAsync(cancellationToken);
+        IQueryable<TEntity> query = _dbSet.AsNoTracking();
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+
+        return await query.ToListAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default, params Expression<Func<TEntity, object>>[] includes)
+    {
+        IQueryable<TEntity> query = _dbSet.AsNoTracking().Where(predicate);
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+
+        return await query.ToListAsync(cancellationToken);
     }
 
     public async Task AddAsync(TEntity entity, CancellationToken cancellationToken = default)

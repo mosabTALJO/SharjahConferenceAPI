@@ -20,5 +20,8 @@ public class MeetingTable
     
     public TableStatus OperationalStatus { get; set; } = TableStatus.Available;
 
+    public Guid? ReservedByPublisherId { get; set; }
+    public Publisher? ReservedByPublisher { get; set; }
+
     public ICollection<Meeting> Meetings { get; init; } = [];
 }

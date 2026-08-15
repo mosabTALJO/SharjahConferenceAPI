@@ -12,4 +12,6 @@ public class Publisher
     public required string CountryCode { get; set; }
 
     public ICollection<Meeting> Meetings { get; init; } = [];
+    public ICollection<MeetingTable> ReservedTables { get; init; } = [];
+    public User? User { get; set; }
 }

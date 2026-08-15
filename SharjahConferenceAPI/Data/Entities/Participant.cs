@@ -14,4 +14,5 @@ public class Participant
     public required string Title { get; set; }
 
     public ICollection<Meeting> Meetings { get; init; } = [];
+    public User? User { get; set; }
 }
