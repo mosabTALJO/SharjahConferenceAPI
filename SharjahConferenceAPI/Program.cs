@@ -32,6 +32,7 @@ builder.Services.AddScoped<IParticipantService, ParticipantService>();
 builder.Services.AddScoped<IMeetingService, MeetingService>();
 builder.Services.AddScoped<IFacilityService, FacilityService>();
 builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
+builder.Services.AddScoped<IConferenceAiToolsService, ConferenceAiToolsService>();
 
 // Configure JWT Authentication
 var jwtSecretKey = builder.Configuration["Jwt:SecretKey"] ?? "SharjahConferenceSecureSigningKey2026!#*SuperSecretLongKeyForJwtAuth";
