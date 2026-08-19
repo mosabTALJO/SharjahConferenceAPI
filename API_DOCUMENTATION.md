@@ -55,6 +55,7 @@ The platform implements three roles:
 | `PUT/DELETE /api/Meetings/{id}` | ✅ | ✅ (Own meetings) | ✅ (Own meetings) | ❌ |
 | `GET /api/Facilities`, `GET /api/Announcements` | ✅ | ✅ | ✅ | ❌ |
 | `POST/PUT/DELETE /api/Facilities`, `/api/Announcements` | ✅ | ❌ | ❌ | ❌ |
+| `POST /api/Chat` | ✅ | ✅ | ✅ | ❌ |
 
 ---
 
@@ -367,6 +368,23 @@ export interface UpdateAnnouncementDto {
   priority: AnnouncementPriority;
   activeStartTime: string; // ISO 8601 DateTime
   activeEndTime: string;   // ISO 8601 DateTime
+}
+
+// --- AI Chatbot ---
+export interface ChatMessageDto {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
+export interface ChatRequestDto {
+  message: string;
+  conversationHistory?: ChatMessageDto[] | null;
+  userLanguage?: string | null; // e.g. 'en', 'ar'
+}
+
+export interface ChatResponseDto {
+  reply: string;
+  toolCallsExecuted?: string[] | null;
 }
 ```
 
@@ -692,3 +710,46 @@ export interface UpdateAnnouncementDto {
 
 - `GET /api/Announcements` & `GET /api/Announcements/{id}`: `[Authorize]` (Admin, Publisher, Participant)
 - `POST`, `PUT`, `DELETE`: `[Authorize(Roles = "Admin")]`
+
+---
+
+### 9. AI Chatbot (`/api/Chat`)
+
+The conference AI Chatbot is powered by Google AI Studio (Gemini 2.5 Flash / Gemini 2.0 Flash) through `Microsoft.Extensions.AI`. It supports automatic function calling against the conference database with strict grounding and bilingual Arabic/English responses.
+
+#### `POST /api/Chat`
+- **Access:** Authenticated (`Admin`, `Publisher`, `Participant`)
+- **Description:** Submit a natural language question in English or Arabic (e.g. asking about table locations, publisher schedules, facilities, or announcements) and receive a synthesized, strictly-grounded response.
+- **Request Headers:**
+  ```http
+  Authorization: Bearer <jwt_token>
+  Content-Type: application/json
+  ```
+- **Request Body:**
+  ```json
+  {
+    "message": "أين تقع دار الشروق وما هو رقم طاولتهم؟",
+    "conversationHistory": [
+      {
+        "role": "user",
+        "content": "مرحباً، أبحث عن دور النشر المشاركة."
+      },
+      {
+        "role": "assistant",
+        "content": "أهلاً بك في مؤتمر الشارقة للناشرين! يمكنك سؤالي عن أي دار نشر أو مشارك وسأزودك بتفاصيل موقعهم وطاولاتهم."
+      }
+    ],
+    "userLanguage": "ar"
+  }
+  ```
+- **Response:** `200 OK`
+  ```json
+  {
+    "reply": "تقع دار الشروق في المنطقة B ومحجوز لها الطاولة رقم 12. إذا احتجت إلى أي مساعدة أخرى، يمكنك زيارة مكتب الاستعلامات في المنطقة A.",
+    "toolCallsExecuted": null
+  }
+  ```
+- **Error Responses:**
+  - `400 Bad Request`: Message is empty or missing.
+  - `401 Unauthorized`: Missing or invalid JWT Bearer token.
+  - `500 Internal Server Error`: Issue connecting to LLM provider.

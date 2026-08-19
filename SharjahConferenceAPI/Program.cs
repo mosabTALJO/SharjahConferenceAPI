@@ -1,9 +1,12 @@
+using System.ClientModel;
 using System.Text;
 using Data;
 using Data.Repositories;
 using Data.UnitOfWork;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.AI;
 using Microsoft.IdentityModel.Tokens;
+using OpenAI;
 using Scalar.AspNetCore;
 using SharjahConferenceAPI.Services.Implementations;
 using SharjahConferenceAPI.Services.Interfaces;
@@ -33,6 +36,25 @@ builder.Services.AddScoped<IMeetingService, MeetingService>();
 builder.Services.AddScoped<IFacilityService, FacilityService>();
 builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
 builder.Services.AddScoped<IConferenceAiToolsService, ConferenceAiToolsService>();
+builder.Services.AddScoped<IChatService, ChatService>();
+
+// Configure Google AI Studio (Gemini) with Microsoft.Extensions.AI
+var geminiApiKey = builder.Configuration["Gemini:ApiKey"] ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY") ?? "dummy-key";
+var geminiModelId = builder.Configuration["Gemini:ModelId"] ?? "gemini-2.5-flash";
+var geminiEndpoint = builder.Configuration["Gemini:Endpoint"] ?? "https://generativelanguage.googleapis.com/v1beta/openai/";
+
+builder.Services.AddSingleton<IChatClient>(sp =>
+{
+    var openAiClient = new OpenAIClient(
+        new ApiKeyCredential(geminiApiKey),
+        new OpenAIClientOptions { Endpoint = new Uri(geminiEndpoint) });
+
+    return openAiClient.GetChatClient(geminiModelId)
+        .AsIChatClient()
+        .AsBuilder()
+        .UseFunctionInvocation()
+        .Build(sp);
+});
 
 // Configure JWT Authentication
 var jwtSecretKey = builder.Configuration["Jwt:SecretKey"] ?? "SharjahConferenceSecureSigningKey2026!#*SuperSecretLongKeyForJwtAuth";
@@ -91,7 +113,8 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Seed initial default Admin user if needed
+// Seed initial default Admin user and conference dataset if needed
 await DbInitializer.SeedDefaultAdminAsync(app.Services);
+await DbInitializer.SeedConferenceDataAsync(app.Services);
 
 app.Run();
