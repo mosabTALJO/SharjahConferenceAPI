@@ -1,3 +1,5 @@
 <Solution>
   <Project Path="SharjahConferenceAPI/SharjahConferenceAPI.csproj" />
+  <Project Path="SharjahConferenceAPI.Tests/SharjahConferenceAPI.Tests.csproj" />
 </Solution>
+

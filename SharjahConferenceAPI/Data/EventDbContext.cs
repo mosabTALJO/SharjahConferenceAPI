@@ -27,15 +27,18 @@ public class EventDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        var dataSourceBuilder = new NpgsqlDataSourceBuilder("Host=ep-little-pond-b2njobgt.c-6.eu-central-1.aws.neon.tech;Database=neondb;Username=neondb_owner;Password=npg_eHx2qM7ioGJQ;Ssl Mode=Require;");
-        
-        // Npgsql 7.0+ requires mapping enums at the ADO.NET connection layer as well
-        dataSourceBuilder.MapEnum<TableStatus>();
-        dataSourceBuilder.MapEnum<MeetingStatus>();
-        dataSourceBuilder.MapEnum<AnnouncementPriority>();
-        dataSourceBuilder.MapEnum<UserRole>();
-        
-        optionsBuilder.UseNpgsql(dataSourceBuilder.Build());
+        if (!optionsBuilder.IsConfigured)
+        {
+            var dataSourceBuilder = new NpgsqlDataSourceBuilder("Host=ep-little-pond-b2njobgt.c-6.eu-central-1.aws.neon.tech;Database=neondb;Username=neondb_owner;Password=npg_eHx2qM7ioGJQ;Ssl Mode=Require;");
+            
+            // Npgsql 7.0+ requires mapping enums at the ADO.NET connection layer as well
+            dataSourceBuilder.MapEnum<TableStatus>();
+            dataSourceBuilder.MapEnum<MeetingStatus>();
+            dataSourceBuilder.MapEnum<AnnouncementPriority>();
+            dataSourceBuilder.MapEnum<UserRole>();
+            
+            optionsBuilder.UseNpgsql(dataSourceBuilder.Build());
+        }
     }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

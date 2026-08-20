@@ -39,6 +39,7 @@ public class ChatService(IChatClient chatClient, IConferenceAiToolsService tools
 
         4. **Tool Calling Strategy**:
            - Use `SearchDirectory` to find participants and publishers, their organizations, and assigned tables/zones.
+           - Use `GetPublisherReservedTables` to find all meeting tables reserved by a specific publisher using their English or Arabic name (supports typos).
            - Use `GetTableStatus` to check whether a specific table number is available, occupied, or reserved, along with current/upcoming meetings.
            - Use `GetParticipantSchedule` to retrieve meeting timetables and locations for specific attendees.
            - Use `GetFacilityLocation` to locate conference amenities (Prayer Rooms, Cafeteria, Registration Desk, Media Center, Restrooms, etc.).
@@ -62,6 +63,7 @@ public class ChatService(IChatClient chatClient, IConferenceAiToolsService tools
             Tools =
             [
                 AIFunctionFactory.Create(toolsService.SearchDirectoryAsync, name: "SearchDirectory", description: "Fuzzy searches conference participants and publishers by name, title, organization, or country code. Returns matching directory entries including assigned table and zone."),
+                AIFunctionFactory.Create(toolsService.GetPublisherReservedTablesAsync, name: "GetPublisherReservedTables", description: "Retrieves all meeting tables reserved by a specific publisher using their English or Arabic name (supports typos)."),
                 AIFunctionFactory.Create(toolsService.GetTableStatusAsync, name: "GetTableStatus", description: "Retrieves real-time status, coordinates, and upcoming meetings for a specific meeting table number (e.g. 1, 5, 20)."),
                 AIFunctionFactory.Create(toolsService.GetParticipantScheduleAsync, name: "GetParticipantSchedule", description: "Looks up scheduled meetings and timetable for an individual participant by their full or partial name."),
                 AIFunctionFactory.Create(toolsService.GetFacilityLocationAsync, name: "GetFacilityLocation", description: "Finds points of interest and facilities (e.g., 'Registration Desk', 'Media Center', 'Prayer Room', 'Cafeteria', 'Restrooms') with their zone and coordinate data."),

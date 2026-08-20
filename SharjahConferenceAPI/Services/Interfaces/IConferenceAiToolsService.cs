@@ -25,8 +25,8 @@ public interface IConferenceAiToolsService
     /// </summary>
     [Description("Retrieves the table's zone, coordinates, current status (Available, Occupied, Reserved), reserving publisher, and the next scheduled meeting time.")]
     Task<TableStatusResultDto?> GetTableStatusAsync(
-        [Description("The integer number of the meeting table to inspect (e.g. 1, 5, 20).")]
-        int tableNumber,
+        [Description("The string number of the meeting table to inspect (e.g. A-017, A-020, A-001).")]
+        string tableNumber,
         CancellationToken ct = default);
 
     /// <summary>
@@ -53,4 +53,14 @@ public interface IConferenceAiToolsService
     [Description("Retrieves current high-priority public announcements that are currently active for conference attendees.")]
     Task<IReadOnlyList<ActiveAnnouncementDto>> GetActiveAnnouncementsAsync(
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Retrieves all meeting tables reserved by a specific publisher using their English or Arabic name, with typo tolerance.
+    /// </summary>
+    [Description("Retrieves all meeting tables reserved by a specific publisher using their English or Arabic name, including table numbers, zone codes, coordinates, and capacity. Supports fuzzy matching and typo tolerance.")]
+    Task<IReadOnlyList<PublisherReservedTablesResultDto>> GetPublisherReservedTablesAsync(
+        [Description("The English or Arabic name of the publisher (e.g. 'Obeikan Education', 'العبيكان', 'Gallimard', 'Dar Al Tanweer'). Typos are automatically handled.")]
+        string publisherName,
+        CancellationToken ct = default);
 }
+

@@ -128,19 +128,15 @@ public class ConferenceAiToolsService(EventDbContext dbContext) : IConferenceAiT
     /// <inheritdoc />
     [Description("Retrieves the table's zone, coordinates, current status (Available, Occupied, Reserved), reserving publisher, and the next scheduled meeting time.")]
     public async Task<TableStatusResultDto?> GetTableStatusAsync(
-        [Description("The integer number of the meeting table to inspect (e.g. 1, 5, 20).")]
-        int tableNumber,
+        [Description("The string number of the meeting table to inspect (e.g. A-017, A-020, A-001).")]
+        string tableNumber,
         CancellationToken ct = default)
     {
-        var tableNumStr = tableNumber.ToString();
         var now = DateTime.UtcNow;
 
         var table = await dbContext.MeetingTables
             .AsNoTracking()
-            .Where(t => t.TableNumber == tableNumStr
-                     || t.TableNumber == $"Table {tableNumStr}"
-                     || t.TableNumber == $"T-{tableNumStr}"
-                     || t.TableNumber == tableNumber.ToString("D2"))
+            .Where(t => t.TableNumber == tableNumber)
             .Select(t => new
             {
                 t.TableNumber,
@@ -379,4 +375,83 @@ public class ConferenceAiToolsService(EventDbContext dbContext) : IConferenceAiT
             ))
             .ToListAsync(ct);
     }
+
+    /// <inheritdoc />
+    [Description("Retrieves all meeting tables reserved by a specific publisher using their English or Arabic name, including table numbers, zone codes, coordinates, and capacity. Supports fuzzy matching and typo tolerance.")]
+    public async Task<IReadOnlyList<PublisherReservedTablesResultDto>> GetPublisherReservedTablesAsync(
+        [Description("The English or Arabic name of the publisher (e.g. 'Obeikan Education', 'العبيكان', 'Gallimard', 'Dar Al Tanweer'). Typos are automatically handled.")]
+        string publisherName,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(publisherName))
+        {
+            return [];
+        }
+
+        var trimmedQuery = publisherName.Trim();
+
+        // 1. Fetch publishers with their reserved tables and associated zones
+        var publishers = await dbContext.Publishers
+            .AsNoTracking()
+            .Select(pub => new
+            {
+                pub.Id,
+                pub.NameEn,
+                pub.NameAr,
+                pub.CountryCode,
+                ReservedTables = pub.ReservedTables
+                    .Select(t => new ReservedTableDetailDto(
+                        t.Id,
+                        t.TableNumber,
+                        t.Zone != null ? t.Zone.Code : "N/A",
+                        t.Zone != null ? t.Zone.NameEn : "N/A",
+                        t.CoordX,
+                        t.CoordY,
+                        t.Capacity,
+                        t.OperationalStatus.ToString()
+                    ))
+                    .ToList()
+            })
+            .ToListAsync(ct);
+
+        if (publishers.Count == 0)
+        {
+            return [];
+        }
+
+        // 2. Score each publisher using bilingual fuzzy matching on both English and Arabic names
+        var scoredPublishers = publishers
+            .Select(p =>
+            {
+                var scoreEn = Utilities.FuzzyMatchHelper.CalculateMatchScore(trimmedQuery, p.NameEn);
+                var scoreAr = Utilities.FuzzyMatchHelper.CalculateMatchScore(trimmedQuery, p.NameAr);
+                var bestScore = Math.Max(scoreEn, scoreAr);
+                return new { Publisher = p, Score = bestScore };
+            })
+            .Where(x => x.Score >= 0.55) // Minimum threshold to eliminate irrelevant publishers
+            .OrderByDescending(x => x.Score)
+            .ToList();
+
+        if (scoredPublishers.Count == 0)
+        {
+            return [];
+        }
+
+        // 3. If the top match is high confidence (score >= 0.85), return top match and any very close ties
+        var topScore = scoredPublishers[0].Score;
+        var selectedMatches = topScore >= 0.85
+            ? scoredPublishers.Where(x => x.Score >= topScore - 0.05).Take(3)
+            : scoredPublishers.Take(5);
+
+        return selectedMatches
+            .Select(m => new PublisherReservedTablesResultDto(
+                PublisherId: m.Publisher.Id,
+                PublisherNameEn: m.Publisher.NameEn,
+                PublisherNameAr: m.Publisher.NameAr,
+                CountryCode: m.Publisher.CountryCode,
+                ReservedTables: m.Publisher.ReservedTables
+            ))
+            .ToList();
+    }
 }
+

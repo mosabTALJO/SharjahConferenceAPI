@@ -86,3 +86,29 @@ public record ActiveAnnouncementDto(
     DateTime ActiveStartTime,
     DateTime ActiveEndTime
 );
+
+/// <summary>
+/// Result containing all meeting tables reserved by a specific publisher.
+/// </summary>
+public record PublisherReservedTablesResultDto(
+    Guid PublisherId,
+    string PublisherNameEn,
+    string PublisherNameAr,
+    string CountryCode,
+    IReadOnlyList<ReservedTableDetailDto> ReservedTables
+);
+
+/// <summary>
+/// Detailed information about an individual meeting table reserved by a publisher.
+/// </summary>
+public record ReservedTableDetailDto(
+    Guid TableId,
+    string TableNumber,
+    string ZoneCode,
+    string ZoneName,
+    double CoordX,
+    double CoordY,
+    int Capacity,
+    string Status
+);
+

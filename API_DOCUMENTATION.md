@@ -720,6 +720,13 @@ The conference AI Chatbot is powered by Google AI Studio (Gemini 3.5 Flash) thro
 #### `POST /api/Chat`
 - **Access:** Authenticated (`Admin`, `Publisher`, `Participant`)
 - **Description:** Submit a natural language question in English or Arabic (e.g. asking about table locations, publisher schedules, facilities, or announcements) and receive a synthesized, strictly-grounded response.
+- **Underlying Deterministic AI Tools**:
+  - `SearchDirectory`: Fuzzy search across participants and publishers by name, title, organization, or country code.
+  - `GetPublisherReservedTables`: Typo-tolerant bilingual search for meeting tables reserved by a specific publisher by English or Arabic name.
+  - `GetTableStatus`: Real-time status, coordinates, and upcoming meetings for a specific meeting table.
+  - `GetParticipantSchedule`: Timetables and locations for individual participant meetings.
+  - `GetFacilityLocation`: Coordinates and nearest zone for conference facilities.
+  - `GetActiveAnnouncements`: Real-time broadcast announcements for attendees.
 - **Request Headers:**
   ```http
   Authorization: Bearer <jwt_token>
@@ -753,3 +760,4 @@ The conference AI Chatbot is powered by Google AI Studio (Gemini 3.5 Flash) thro
   - `400 Bad Request`: Message is empty or missing.
   - `401 Unauthorized`: Missing or invalid JWT Bearer token.
   - `500 Internal Server Error`: Issue connecting to LLM provider.
+
