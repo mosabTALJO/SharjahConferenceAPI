@@ -1,4 +1,5 @@
 using System.ClientModel;
+using System.ClientModel.Primitives;
 using System.Text;
 using Data;
 using Data.Repositories;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.IdentityModel.Tokens;
 using OpenAI;
 using Scalar.AspNetCore;
+using SharjahConferenceAPI.Infrastructure;
 using SharjahConferenceAPI.Services.Implementations;
 using SharjahConferenceAPI.Services.Interfaces;
 
@@ -40,14 +42,22 @@ builder.Services.AddScoped<IChatService, ChatService>();
 
 // Configure Google AI Studio (Gemini) with Microsoft.Extensions.AI
 var geminiApiKey = builder.Configuration["Gemini:ApiKey"] ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY") ?? "dummy-key";
-var geminiModelId = builder.Configuration["Gemini:ModelId"] ?? "gemini-2.5-flash";
+var geminiModelId = builder.Configuration["Gemini:ModelId"] ?? "gemini-3.5-flash";
 var geminiEndpoint = builder.Configuration["Gemini:Endpoint"] ?? "https://generativelanguage.googleapis.com/v1beta/openai/";
 
 builder.Services.AddSingleton<IChatClient>(sp =>
 {
+    var httpClient = new HttpClient(new GeminiThoughtSignatureHandler(new HttpClientHandler()));
+
+    var openAiOptions = new OpenAIClientOptions
+    {
+        Endpoint = new Uri(geminiEndpoint),
+        Transport = new HttpClientPipelineTransport(httpClient)
+    };
+
     var openAiClient = new OpenAIClient(
         new ApiKeyCredential(geminiApiKey),
-        new OpenAIClientOptions { Endpoint = new Uri(geminiEndpoint) });
+        openAiOptions);
 
     return openAiClient.GetChatClient(geminiModelId)
         .AsIChatClient()

@@ -715,7 +715,7 @@ export interface ChatResponseDto {
 
 ### 9. AI Chatbot (`/api/Chat`)
 
-The conference AI Chatbot is powered by Google AI Studio (Gemini 2.5 Flash / Gemini 2.0 Flash) through `Microsoft.Extensions.AI`. It supports automatic function calling against the conference database with strict grounding and bilingual Arabic/English responses.
+The conference AI Chatbot is powered by Google AI Studio (Gemini 3.5 Flash) through `Microsoft.Extensions.AI`. It supports automatic function calling against the conference database with strict grounding and bilingual Arabic/English responses.
 
 #### `POST /api/Chat`
 - **Access:** Authenticated (`Admin`, `Publisher`, `Participant`)
